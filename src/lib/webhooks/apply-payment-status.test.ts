@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { PrismaClient } from "@prisma/client";
-import { FlowPaymentStatus, type PaymentStatusResult } from "@/lib/payments/flow";
+import { MercadoPagoPaymentStatus, type PaymentStatusResult } from "@/lib/payments/mercadopago";
 
 vi.mock("@/lib/db", () => ({ prisma: {} }));
 
@@ -13,16 +13,12 @@ vi.mock("@/lib/email/resend", () => emailMocks);
 
 const { applyPaymentStatus } = await import("./apply-payment-status");
 
-function baseStatus(overrides: Partial<PaymentStatusResult> = {}): PaymentStatusResult {
+function basePayment(overrides: Partial<PaymentStatusResult> = {}): PaymentStatusResult {
   return {
-    flowOrder: 999,
-    commerceOrder: "contribution-1",
-    requestDate: new Date().toISOString(),
-    status: FlowPaymentStatus.PAID,
-    subject: "Set de sábanas",
-    currency: "CLP",
+    paymentId: "999",
+    externalReference: "contribution-1",
+    status: MercadoPagoPaymentStatus.APPROVED,
     amount: 30000,
-    payer: "invitado@example.com",
     ...overrides,
   };
 }
@@ -36,8 +32,8 @@ function fakeContribution(overrides: Record<string, unknown> = {}) {
     message: null,
     amount: 30000,
     status: "PENDING",
-    flowToken: "tok-1",
-    flowOrder: "contribution-1",
+    mpPaymentId: null,
+    externalReference: "contribution-1",
     item: { id: "item-1", name: "Set de sábanas" },
     ...overrides,
   };
@@ -65,15 +61,18 @@ beforeEach(() => {
 });
 
 describe("applyPaymentStatus", () => {
-  it("lanza si no existe la contribución (commerceOrder debería ser siempre válido)", async () => {
+  it("lanza si no existe la contribución (external_reference debería ser siempre válido)", async () => {
     const { db } = fakeDb(null);
-    await expect(applyPaymentStatus(baseStatus(), db)).rejects.toThrow(/No existe contribución/);
+    await expect(applyPaymentStatus(basePayment(), db)).rejects.toThrow(/No existe contribución/);
   });
 
-  it("aprueba la contribución y marca el ítem como regalado cuando Flow confirma el pago", async () => {
+  it("aprueba la contribución y marca el ítem como regalado cuando Mercado Pago confirma el pago", async () => {
     const { db, contributionUpdate, itemUpdate } = fakeDb(fakeContribution());
 
-    const result = await applyPaymentStatus(baseStatus({ status: FlowPaymentStatus.PAID }), db);
+    const result = await applyPaymentStatus(
+      basePayment({ status: MercadoPagoPaymentStatus.APPROVED }),
+      db
+    );
 
     expect(result).toEqual({ outcome: "approved" });
     expect(contributionUpdate).toHaveBeenCalledWith(
@@ -89,7 +88,10 @@ describe("applyPaymentStatus", () => {
   it("ignora un webhook duplicado para un pago ya aprobado", async () => {
     const { db, contributionUpdate } = fakeDb(fakeContribution({ status: "APPROVED" }));
 
-    const result = await applyPaymentStatus(baseStatus({ status: FlowPaymentStatus.PAID }), db);
+    const result = await applyPaymentStatus(
+      basePayment({ status: MercadoPagoPaymentStatus.APPROVED }),
+      db
+    );
 
     expect(result).toEqual({ outcome: "already-resolved" });
     expect(contributionUpdate).not.toHaveBeenCalled();
@@ -99,7 +101,10 @@ describe("applyPaymentStatus", () => {
   it("avisa por email en vez de descartar en silencio un pago aprobado tardío sobre una reserva ya expirada", async () => {
     const { db, contributionUpdate, itemUpdate } = fakeDb(fakeContribution({ status: "EXPIRED" }));
 
-    const result = await applyPaymentStatus(baseStatus({ status: FlowPaymentStatus.PAID }), db);
+    const result = await applyPaymentStatus(
+      basePayment({ status: MercadoPagoPaymentStatus.APPROVED }),
+      db
+    );
 
     expect(result).toEqual({ outcome: "anomaly-late-payment" });
     expect(contributionUpdate).not.toHaveBeenCalled();
@@ -107,28 +112,28 @@ describe("applyPaymentStatus", () => {
     expect(emailMocks.sendAdminAlertEmail).toHaveBeenCalledOnce();
   });
 
-  it("rechaza la contribución y libera el ítem cuando Flow rechaza el pago", async () => {
+  it("rechaza la contribución y libera el ítem cuando Mercado Pago rechaza el pago", async () => {
     const { db, contributionUpdate, itemUpdate } = fakeDb(fakeContribution());
 
     const result = await applyPaymentStatus(
-      baseStatus({ status: FlowPaymentStatus.REJECTED }),
+      basePayment({ status: MercadoPagoPaymentStatus.REJECTED }),
       db
     );
 
     expect(result).toEqual({ outcome: "rejected" });
     expect(contributionUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { status: "REJECTED" } })
+      expect.objectContaining({ data: expect.objectContaining({ status: "REJECTED" }) })
     );
     expect(itemUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ data: { status: "AVAILABLE", reservedUntil: null } })
     );
   });
 
-  it("no hace nada si Flow todavía reporta el pago como pendiente", async () => {
+  it("no hace nada si Mercado Pago todavía reporta el pago como pendiente o en proceso", async () => {
     const { db, contributionUpdate, itemUpdate } = fakeDb(fakeContribution());
 
     const result = await applyPaymentStatus(
-      baseStatus({ status: FlowPaymentStatus.PENDING }),
+      basePayment({ status: MercadoPagoPaymentStatus.IN_PROCESS }),
       db
     );
 
@@ -141,11 +146,37 @@ describe("applyPaymentStatus", () => {
     const { db, contributionUpdate } = fakeDb(fakeContribution({ status: "EXPIRED" }));
 
     const result = await applyPaymentStatus(
-      baseStatus({ status: FlowPaymentStatus.REJECTED }),
+      basePayment({ status: MercadoPagoPaymentStatus.REJECTED }),
       db
     );
 
     expect(result).toEqual({ outcome: "already-resolved" });
     expect(contributionUpdate).not.toHaveBeenCalled();
+  });
+
+  it("avisa por email cuando un pago ya aprobado se revierte (reembolso o contracargo)", async () => {
+    const { db, contributionUpdate, itemUpdate } = fakeDb(fakeContribution({ status: "APPROVED" }));
+
+    const result = await applyPaymentStatus(
+      basePayment({ status: MercadoPagoPaymentStatus.REFUNDED }),
+      db
+    );
+
+    expect(result).toEqual({ outcome: "anomaly-reversed-payment" });
+    expect(contributionUpdate).not.toHaveBeenCalled();
+    expect(itemUpdate).not.toHaveBeenCalled();
+    expect(emailMocks.sendAdminAlertEmail).toHaveBeenCalledOnce();
+  });
+
+  it("ignora un contracargo sobre una contribución que nunca llegó a aprobarse", async () => {
+    const { db } = fakeDb(fakeContribution({ status: "REJECTED" }));
+
+    const result = await applyPaymentStatus(
+      basePayment({ status: MercadoPagoPaymentStatus.CHARGED_BACK }),
+      db
+    );
+
+    expect(result).toEqual({ outcome: "already-resolved" });
+    expect(emailMocks.sendAdminAlertEmail).not.toHaveBeenCalled();
   });
 });

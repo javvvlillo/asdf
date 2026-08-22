@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { prisma } from "@/lib/db";
-import { createPayment, buildPaymentRedirectUrl } from "@/lib/payments/flow";
+import { createPreference } from "@/lib/payments/mercadopago";
 
 const RESERVATION_MINUTES = 20;
 
@@ -62,30 +62,27 @@ export async function POST(req: NextRequest) {
       guestEmail,
       message,
       amount: item.price,
-      flowOrder: contributionId,
+      externalReference: contributionId,
     },
   });
 
   try {
-    const payment = await createPayment({
-      commerceOrder: contribution.id,
-      subject: item.name,
+    const preference = await createPreference({
+      externalReference: contribution.id,
+      itemName: item.name,
       amount: item.price,
-      email: guestEmail,
-      urlConfirmation: `${siteUrl}/api/webhooks/flow`,
-      urlReturn: `${siteUrl}/gracias`,
+      guestEmail,
+      notificationUrl: `${siteUrl}/api/webhooks/mercadopago`,
+      // Mercado Pago agrega external_reference, payment_id y status a esta
+      // URL automáticamente al redirigir - no hace falta armarla nosotros.
+      returnUrl: `${siteUrl}/gracias`,
     });
 
-    await prisma.contribution.update({
-      where: { id: contribution.id },
-      data: { flowToken: payment.token },
-    });
-
-    return NextResponse.json({ redirectUrl: buildPaymentRedirectUrl(payment) });
+    return NextResponse.json({ redirectUrl: preference.redirectUrl });
   } catch (err) {
-    // Flow no pudo crear la orden: liberamos el ítem y descartamos la
-    // contribución - nunca se llegó a intentar cobrar, no queda nada que
-    // reconciliar.
+    // Mercado Pago no pudo crear la preferencia: liberamos el ítem y
+    // descartamos la contribución - nunca se llegó a intentar cobrar, no
+    // queda nada que reconciliar.
     await prisma.$transaction([
       prisma.item.update({
         where: { id: item.id },
@@ -94,7 +91,7 @@ export async function POST(req: NextRequest) {
       prisma.contribution.delete({ where: { id: contribution.id } }),
     ]);
 
-    console.error("Error creando pago en Flow", err);
+    console.error("Error creando preferencia en Mercado Pago", err);
     return NextResponse.json(
       { error: "No pudimos iniciar el pago. Intenta de nuevo en unos minutos." },
       { status: 502 }

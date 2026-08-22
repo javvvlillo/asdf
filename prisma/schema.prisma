@@ -60,18 +60,18 @@ model Contribution {
   message     String?
   amount      Int
   status      ContributionStatus @default(PENDING)
-  flowToken   String?
-  flowOrder   String             @unique
+  mpPaymentId String?
+  externalReference String       @unique
   createdAt   DateTime           @default(now())
   confirmedAt DateTime?
 
   @@index([itemId, status])
-  @@index([flowToken])
+  @@index([mpPaymentId])
 }
 
 model WebhookEvent {
   id         String   @id @default(cuid())
-  flowToken  String   @unique
+  mpPaymentId String  @unique
   payloadRaw String   @db.Text
   processed  Boolean  @default(false)
   attempts   Int      @default(0)

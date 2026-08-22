@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getPaymentStatus } from "@/lib/payments/flow";
+import { findPaymentByExternalReference } from "@/lib/payments/mercadopago";
 import { applyPaymentStatus } from "@/lib/webhooks/apply-payment-status";
 import { isAuthorizedCronRequest } from "@/lib/cron-auth";
 
 /**
  * Corre cada 5 minutos. Antes de liberar una reserva vencida, verifica con
- * Flow si el pago en realidad sí se completó (ej. una transferencia que
- * demoró más de los 20 minutos de reserva) - si no hiciéramos esto
+ * Mercado Pago si el pago en realidad sí se completó (ej. una transferencia
+ * que demoró más de los 20 minutos de reserva) - si no hiciéramos esto
  * podríamos regalar el mismo ítem dos veces mientras un pago real sigue
- * en camino.
+ * en camino. A diferencia de Flow, acá no tenemos un token guardado desde
+ * el inicio - Mercado Pago solo genera el id del pago cuando el invitado
+ * efectivamente paga, así que siempre buscamos por external_reference.
  */
 export async function GET(req: NextRequest) {
   if (!isAuthorizedCronRequest(req)) {
@@ -40,25 +42,25 @@ export async function GET(req: NextRequest) {
       continue;
     }
 
-    if (contribution.flowToken) {
-      try {
-        const status = await getPaymentStatus(contribution.flowToken);
-        const result = await applyPaymentStatus(status);
+    try {
+      const payment = await findPaymentByExternalReference(contribution.externalReference);
+      if (payment) {
+        const result = await applyPaymentStatus(payment);
         if (result.outcome !== "still-pending") {
           results.push({ itemId: item.id, action: `resolved-${result.outcome}` });
           continue;
         }
-      } catch (err) {
-        console.error("Error consultando estado en Flow al expirar reserva", {
-          itemId: item.id,
-          contributionId: contribution.id,
-          err,
-        });
-        // Si Flow no responde, preferimos no liberar el ítem todavía -
-        // se reintentará en la próxima corrida del cron.
-        results.push({ itemId: item.id, action: "skipped-flow-error" });
-        continue;
       }
+    } catch (err) {
+      console.error("Error consultando estado en Mercado Pago al expirar reserva", {
+        itemId: item.id,
+        contributionId: contribution.id,
+        err,
+      });
+      // Si Mercado Pago no responde, preferimos no liberar el ítem
+      // todavía - se reintentará en la próxima corrida del cron.
+      results.push({ itemId: item.id, action: "skipped-mp-error" });
+      continue;
     }
 
     await prisma.$transaction([

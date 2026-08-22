@@ -60,8 +60,8 @@ export async function sendOwnerNotificationEmail(params: {
 
 /**
  * Alerta para casos que requieren revisión manual: por ejemplo un pago que
- * Flow confirma como aprobado pero cuya reserva ya había expirado en
- * nuestro sistema. No intentamos resolver esto automáticamente - solo
+ * Mercado Pago confirma como aprobado pero cuya reserva ya había expirado
+ * en nuestro sistema. No intentamos resolver esto automáticamente - solo
  * avisamos para que se resuelva a mano, como el resto de las excepciones
  * de pago en este proyecto.
  */

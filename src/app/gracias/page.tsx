@@ -6,22 +6,22 @@ export const dynamic = "force-dynamic";
 type GraciasState = "exito" | "fallo" | "pendiente";
 
 /**
- * Página de retorno. Flow solo soporta una urlReturn (le agrega ?token=xxx
- * al redirigir), así que esta única página decide qué mostrar leyendo -
- * nunca escribiendo - el estado que ya haya dejado el webhook. El invitado
- * puede cerrar el navegador antes de llegar aquí sin que eso afecte nada:
- * esta pantalla es puramente informativa.
+ * Página de retorno. Mercado Pago solo soporta una URL de retorno (le
+ * agrega ?external_reference=xxx al redirigir), así que esta única página
+ * decide qué mostrar leyendo - nunca escribiendo - el estado que ya haya
+ * dejado el webhook. El invitado puede cerrar el navegador antes de llegar
+ * aquí sin que eso afecte nada: esta pantalla es puramente informativa.
  */
 export default async function GraciasPage({
   searchParams,
 }: {
-  searchParams: Promise<{ token?: string }>;
+  searchParams: Promise<{ external_reference?: string }>;
 }) {
-  const { token } = await searchParams;
+  const { external_reference: externalReference } = await searchParams;
 
-  const contribution = token
-    ? await prisma.contribution.findFirst({
-        where: { flowToken: token },
+  const contribution = externalReference
+    ? await prisma.contribution.findUnique({
+        where: { externalReference },
         include: { item: true },
       })
     : null;
