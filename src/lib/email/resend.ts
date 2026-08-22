@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { formatClp } from "@/lib/format";
 
 function getResend(): Resend {
   const apiKey = process.env.RESEND_API_KEY;
@@ -12,10 +13,6 @@ function getFrom(): string {
   const from = process.env.EMAIL_FROM;
   if (!from) throw new Error("Falta EMAIL_FROM");
   return from;
-}
-
-function formatClp(amount: number): string {
-  return amount.toLocaleString("es-CL");
 }
 
 export async function sendThankYouEmail(params: {
