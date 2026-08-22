@@ -1,6 +1,5 @@
 {
   "crons": [
-    { "path": "/api/cron/release-reservations", "schedule": "*/5 * * * *" },
     { "path": "/api/cron/reconcile-payments", "schedule": "0 12 * * *" }
   ]
 }
