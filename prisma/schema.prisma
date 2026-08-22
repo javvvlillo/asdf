@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Registry {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  coupleNames    String
+  weddingDate    DateTime
+  welcomeMessage String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  items Item[]
+}
+
+enum ItemStatus {
+  AVAILABLE
+  RESERVED
+  GIFTED
+}
+
+model Item {
+  id            String     @id @default(cuid())
+  registryId    String
+  registry      Registry   @relation(fields: [registryId], references: [id])
+  name          String
+  description   String?
+  imageUrl      String?
+  price         Int // CLP, pesos enteros - sin decimales
+  order         Int        @default(0)
+  status        ItemStatus @default(AVAILABLE)
+  reservedUntil DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  contributions Contribution[]
+
+  @@index([registryId, status])
+}
+
+enum ContributionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+model Contribution {
+  id          String             @id @default(cuid())
+  itemId      String
+  item        Item               @relation(fields: [itemId], references: [id])
+  guestName   String
+  guestEmail  String
+  message     String?
+  amount      Int
+  status      ContributionStatus @default(PENDING)
+  flowToken   String?
+  flowOrder   String             @unique
+  createdAt   DateTime           @default(now())
+  confirmedAt DateTime?
+
+  @@index([itemId, status])
+  @@index([flowToken])
+}
+
+model WebhookEvent {
+  id         String   @id @default(cuid())
+  flowToken  String   @unique
+  payloadRaw String   @db.Text
+  processed  Boolean  @default(false)
+  attempts   Int      @default(0)
+  error      String?
+  createdAt  DateTime @default(now())
+}
