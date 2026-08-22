@@ -4,11 +4,11 @@ const prisma = new PrismaClient();
 
 async function main() {
   const registry = await prisma.registry.upsert({
-    where: { slug: "javiera-y-sebastian" },
+    where: { slug: "sofia-y-cristobal" },
     update: {},
     create: {
-      slug: "javiera-y-sebastian",
-      coupleNames: "Javiera & Sebastián",
+      slug: "sofia-y-cristobal",
+      coupleNames: "Sofía & Cristóbal",
       weddingDate: new Date("2026-12-12"),
       welcomeMessage:
         "Gracias por acompañarnos en este día tan especial. Si quieres hacernos un regalo, aquí puedes elegir algo con cariño.",
