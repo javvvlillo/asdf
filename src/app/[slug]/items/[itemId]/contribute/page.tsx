@@ -31,14 +31,30 @@ export default async function ContributePage({
         ← Volver a la lista
       </a>
 
-      <div className="mt-6 rounded-2xl border border-charcoal/10 bg-white/70 p-6">
-        <h1 className="font-display text-2xl">{item.name}</h1>
-        {item.description && (
-          <p className="mt-2 text-sm text-charcoal/70">{item.description}</p>
-        )}
-        <p className="mt-4 font-display text-2xl text-terracotta-600">
-          ${formatClp(item.price)}
-        </p>
+      <div className="mt-6 overflow-hidden rounded-2xl border border-charcoal/10 bg-white/70">
+        <div className="aspect-[4/3] w-full overflow-hidden bg-paper">
+          {item.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={item.imageUrl}
+              alt={item.name}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center text-sm text-charcoal/30">
+              Sin foto
+            </div>
+          )}
+        </div>
+        <div className="p-6">
+          <h1 className="font-display text-2xl">{item.name}</h1>
+          {item.description && (
+            <p className="mt-2 text-sm text-charcoal/70">{item.description}</p>
+          )}
+          <p className="mt-4 font-display text-2xl text-terracotta-600">
+            ${formatClp(item.price)}
+          </p>
+        </div>
       </div>
 
       <div className="mt-8">
