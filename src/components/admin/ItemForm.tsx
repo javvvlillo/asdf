@@ -8,7 +8,7 @@ export function ItemForm({
   defaultValues,
 }: {
   action: (formData: FormData) => void;
-  defaultValues?: Pick<Item, "name" | "description" | "imageUrl" | "price" | "order">;
+  defaultValues?: Pick<Item, "name" | "description" | "imageUrl" | "price" | "order" | "stock">;
 }) {
   return (
     <form action={action} className="flex flex-col gap-4">
@@ -50,6 +50,18 @@ export function ItemForm({
           step={1}
           required
           defaultValue={defaultValues?.price}
+          className={inputClass}
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-sm">
+        Stock (cuántos se pueden regalar)
+        <input
+          name="stock"
+          type="number"
+          min={0}
+          step={1}
+          required
+          defaultValue={defaultValues?.stock ?? 1}
           className={inputClass}
         />
       </label>

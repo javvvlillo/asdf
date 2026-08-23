@@ -21,7 +21,7 @@ export default async function ContributePage({
     notFound();
   }
 
-  if (item.status !== "AVAILABLE") {
+  if (item.stock <= 0) {
     redirect(`/${slug}`);
   }
 

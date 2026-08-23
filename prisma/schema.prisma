@@ -23,36 +23,32 @@ model Registry {
   items Item[]
 }
 
-enum ItemStatus {
-  AVAILABLE
-  RESERVED
-  GIFTED
-}
-
 model Item {
-  id            String     @id @default(cuid())
-  registryId    String
-  registry      Registry   @relation(fields: [registryId], references: [id])
-  name          String
-  description   String?
-  imageUrl      String?
-  price         Int // CLP, pesos enteros - sin decimales
-  order         Int        @default(0)
-  status        ItemStatus @default(AVAILABLE)
-  reservedUntil DateTime?
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id          String   @id @default(cuid())
+  registryId  String
+  registry    Registry @relation(fields: [registryId], references: [id])
+  name        String
+  description String?
+  imageUrl    String?
+  price       Int // CLP, pesos enteros - sin decimales
+  order       Int      @default(0)
+  // Disponible = stock > 0, agotado = stock <= 0. Nunca baja al iniciar un
+  // pago, solo cuando Mercado Pago confirma uno aprobado - ver
+  // applyPaymentStatus. Puede quedar en negativo si dos invitados pagan
+  // casi al mismo tiempo con poco stock; eso dispara una alerta manual.
+  stock       Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   contributions Contribution[]
 
-  @@index([registryId, status])
+  @@index([registryId])
 }
 
 enum ContributionStatus {
   PENDING
   APPROVED
   REJECTED
-  EXPIRED
 }
 
 model Contribution {

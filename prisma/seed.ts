@@ -47,7 +47,7 @@ async function main() {
         imageUrl: "https://images.unsplash.com/photo-1593618998160-e34014e67546?w=800",
         price: 45000,
         order: 4,
-        status: "GIFTED",
+        stock: 0,
       },
     ],
     skipDuplicates: true,

@@ -5,12 +5,6 @@ import { deleteItem } from "@/lib/admin/actions";
 
 export const dynamic = "force-dynamic";
 
-const STATUS_LABELS: Record<string, string> = {
-  AVAILABLE: "Disponible",
-  RESERVED: "Reservado",
-  GIFTED: "Regalado",
-};
-
 const ERROR_MESSAGES: Record<string, string> = {
   "tiene-aportes": "No se pudo eliminar: este regalo ya tiene aportes asociados.",
   "no-se-pudo-crear": "No se pudo crear el regalo. Revisa los datos e intenta de nuevo.",
@@ -49,7 +43,7 @@ export default async function AdminItemsPage({
             <tr className="border-b border-charcoal/10 text-charcoal/50">
               <th className="py-2 pr-4">Nombre</th>
               <th className="pr-4">Precio</th>
-              <th className="pr-4">Estado</th>
+              <th className="pr-4">Stock</th>
               <th className="pr-4">Orden</th>
               <th></th>
             </tr>
@@ -59,7 +53,9 @@ export default async function AdminItemsPage({
               <tr key={item.id} className="border-b border-charcoal/5">
                 <td className="py-2 pr-4">{item.name}</td>
                 <td className="pr-4">${formatClp(item.price)}</td>
-                <td className="pr-4">{STATUS_LABELS[item.status]}</td>
+                <td className="pr-4">
+                  {item.stock > 0 ? item.stock : <span className="text-charcoal/50">Agotado</span>}
+                </td>
                 <td className="pr-4">{item.order}</td>
                 <td className="space-x-3 py-2 text-right">
                   <Link href={`/admin/items/${item.id}`} className="text-gold hover:underline">

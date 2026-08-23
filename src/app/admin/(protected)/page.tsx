@@ -4,25 +4,23 @@ import { formatClp } from "@/lib/format";
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboard() {
-  const [itemCounts, approvedAgg] = await Promise.all([
-    prisma.item.groupBy({ by: ["status"], _count: true }),
+  const [availableCount, soldOutCount, approvedAgg] = await Promise.all([
+    prisma.item.count({ where: { stock: { gt: 0 } } }),
+    prisma.item.count({ where: { stock: { lte: 0 } } }),
     prisma.contribution.aggregate({
       where: { status: "APPROVED" },
       _sum: { amount: true },
+      _count: true,
     }),
   ]);
-
-  const countByStatus = Object.fromEntries(
-    itemCounts.map((c) => [c.status, c._count])
-  ) as Record<string, number>;
 
   return (
     <div>
       <h1 className="font-display text-2xl">Resumen</h1>
       <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard label="Disponibles" value={countByStatus.AVAILABLE ?? 0} />
-        <StatCard label="Reservados" value={countByStatus.RESERVED ?? 0} />
-        <StatCard label="Regalados" value={countByStatus.GIFTED ?? 0} />
+        <StatCard label="Disponibles" value={availableCount} />
+        <StatCard label="Agotados" value={soldOutCount} />
+        <StatCard label="Regalos confirmados" value={approvedAgg._count} />
         <StatCard label="Recaudado" value={`$${formatClp(approvedAgg._sum.amount ?? 0)}`} />
       </div>
     </div>

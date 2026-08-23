@@ -17,10 +17,11 @@ export type ApplyResult =
 
 /**
  * Aplica un estado de pago de Mercado Pago a la contribución
- * correspondiente. Es el único lugar donde se decide si un ítem pasa a
- * GIFTED o vuelve a AVAILABLE - lo usan el webhook de confirmación y los
- * dos crons, para que la lógica de negocio viva en un solo lugar y sea
- * testeable sin la app corriendo.
+ * correspondiente. Es el único lugar donde se decide si baja el stock de
+ * un ítem - lo usa el webhook de confirmación y el cron de reconciliación,
+ * para que la lógica de negocio viva en un solo lugar y sea testeable sin
+ * la app corriendo. El stock nunca baja al iniciar un pago, solo acá,
+ * cuando Mercado Pago ya confirmó uno aprobado.
  */
 export async function applyPaymentStatus(
   payment: PaymentStatusResult,
@@ -45,9 +46,8 @@ export async function applyPaymentStatus(
 
       if (contribution.status !== "PENDING") {
         // Mercado Pago confirma el pago después de que nosotros ya dimos
-        // por rechazada/expirada la reserva (ej. el timeout de 20 min
-        // venció antes de que se acreditara una transferencia). El dinero
-        // sí llegó; nunca lo descartamos en silencio.
+        // por rechazada la contribución. El dinero sí llegó; nunca lo
+        // descartamos en silencio.
         await sendAdminAlertEmail({
           subject: `Pago tardío aprobado para contribución ya ${contribution.status}`,
           details: {
@@ -64,14 +64,14 @@ export async function applyPaymentStatus(
         return { outcome: "anomaly-late-payment" };
       }
 
-      await db.$transaction([
+      const [, updatedItem] = await db.$transaction([
         db.contribution.update({
           where: { id: contribution.id },
           data: { status: "APPROVED", confirmedAt: new Date(), mpPaymentId: payment.paymentId },
         }),
         db.item.update({
           where: { id: contribution.itemId },
-          data: { status: "GIFTED", reservedUntil: null },
+          data: { stock: { decrement: 1 } },
         }),
       ]);
 
@@ -89,6 +89,23 @@ export async function applyPaymentStatus(
         message: contribution.message,
       });
 
+      if (updatedItem.stock < 0) {
+        // Sin reservas no hay forma de garantizar que esto no pase con
+        // poco stock y pagos casi simultáneos - se avisa para resolverlo
+        // a mano con el invitado, en vez de mostrar un stock inconsistente.
+        await sendAdminAlertEmail({
+          subject: `Se vendió de más "${contribution.item.name}" (sin stock)`,
+          details: {
+            itemId: contribution.itemId,
+            itemName: contribution.item.name,
+            stockRestante: updatedItem.stock,
+            contributionId: contribution.id,
+            guestName: contribution.guestName,
+            guestEmail: contribution.guestEmail,
+          },
+        });
+      }
+
       return { outcome: "approved" };
     }
 
@@ -98,26 +115,22 @@ export async function applyPaymentStatus(
         return { outcome: "already-resolved" };
       }
 
-      await db.$transaction([
-        db.contribution.update({
-          where: { id: contribution.id },
-          data: { status: "REJECTED", mpPaymentId: payment.paymentId },
-        }),
-        db.item.update({
-          where: { id: contribution.itemId },
-          data: { status: "AVAILABLE", reservedUntil: null },
-        }),
-      ]);
+      // El stock nunca bajó para esta contribución (no hay reservas), así
+      // que no hay nada que revertir en el ítem.
+      await db.contribution.update({
+        where: { id: contribution.id },
+        data: { status: "REJECTED", mpPaymentId: payment.paymentId },
+      });
 
       return { outcome: "rejected" };
     }
 
     case MercadoPagoPaymentStatus.REFUNDED:
     case MercadoPagoPaymentStatus.CHARGED_BACK: {
-      // El pago ya se había aprobado y el ítem ya se marcó regalado; el
-      // dinero se devolvió después (reembolso o contracargo). No
-      // revertimos nada automáticamente - el ítem puede ya estar en manos
-      // del invitado. Se resuelve a mano, como el resto de las excepciones.
+      // El pago ya se había aprobado y el stock ya se descontó; el dinero
+      // se devolvió después (reembolso o contracargo). No revertimos nada
+      // automáticamente - el ítem puede ya estar en manos del invitado. Se
+      // resuelve a mano, como el resto de las excepciones.
       if (contribution.status !== "APPROVED") {
         return { outcome: "already-resolved" };
       }

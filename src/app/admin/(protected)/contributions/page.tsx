@@ -7,7 +7,6 @@ const STATUS_LABELS: Record<string, string> = {
   PENDING: "Pendiente",
   APPROVED: "Aprobado",
   REJECTED: "Rechazado",
-  EXPIRED: "Expirado",
 };
 
 export default async function AdminContributionsPage() {

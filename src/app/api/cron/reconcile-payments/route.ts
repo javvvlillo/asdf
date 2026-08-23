@@ -8,9 +8,9 @@ const LOOKBACK_DAYS = 3;
 
 /**
  * Corre una vez al día. Vuelve a preguntarle a Mercado Pago por cada
- * contribución de los últimos días que quedó PENDING o EXPIRED: es la red
- * de seguridad para cualquier pago aprobado que, por lo que sea (webhook
- * que nunca llegó, error de red, bug nuestro), no haya quedado registrado.
+ * contribución de los últimos días que quedó PENDING: es la red de
+ * seguridad para cualquier pago aprobado que, por lo que sea (webhook que
+ * nunca llegó, error de red, bug nuestro), no haya quedado registrado.
  * Buscamos por external_reference (no hay un token/id guardado desde el
  * inicio como con Flow, ya que Mercado Pago solo genera el id del pago
  * cuando el invitado efectivamente paga).
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
 
   const candidates = await prisma.contribution.findMany({
     where: {
-      status: { in: ["PENDING", "EXPIRED"] },
+      status: "PENDING",
       createdAt: { gte: since },
     },
   });

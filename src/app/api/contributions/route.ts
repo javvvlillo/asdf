@@ -3,8 +3,6 @@ import { randomUUID } from "crypto";
 import { prisma } from "@/lib/db";
 import { createPreference } from "@/lib/payments/mercadopago";
 
-const RESERVATION_MINUTES = 20;
-
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
 
@@ -25,23 +23,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "El regalo no existe" }, { status: 404 });
   }
 
-  const now = new Date();
-  const reservedUntil = new Date(now.getTime() + RESERVATION_MINUTES * 60_000);
-
-  // Update condicional atómico: solo reserva si está AVAILABLE, o si está
-  // RESERVED pero su reserva anterior ya venció. Esto evita que dos
-  // invitados reserven el mismo ítem en una condición de carrera - la
-  // garantía la da Postgres al ejecutar un solo UPDATE, no un
-  // read-then-write en la aplicación.
-  const reservation = await prisma.item.updateMany({
-    where: {
-      id: itemId,
-      OR: [{ status: "AVAILABLE" }, { status: "RESERVED", reservedUntil: { lt: now } }],
-    },
-    data: { status: "RESERVED", reservedUntil },
-  });
-
-  if (reservation.count === 0) {
+  // Solo bloquea iniciar un pago si ya no queda stock. No reserva ni
+  // descuenta nada acá - el stock solo baja cuando Mercado Pago confirma
+  // un pago aprobado (ver applyPaymentStatus). Entre este chequeo y ese
+  // momento, dos invitados pueden pagar el mismo último cupo; es un
+  // trade-off aceptado a cambio de no tener reservas temporales.
+  if (item.stock <= 0) {
     return NextResponse.json(
       { error: "Este regalo ya no está disponible" },
       { status: 409 }
@@ -80,16 +67,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ redirectUrl: preference.redirectUrl });
   } catch (err) {
-    // Mercado Pago no pudo crear la preferencia: liberamos el ítem y
-    // descartamos la contribución - nunca se llegó a intentar cobrar, no
-    // queda nada que reconciliar.
-    await prisma.$transaction([
-      prisma.item.update({
-        where: { id: item.id },
-        data: { status: "AVAILABLE", reservedUntil: null },
-      }),
-      prisma.contribution.delete({ where: { id: contribution.id } }),
-    ]);
+    // Mercado Pago no pudo crear la preferencia: nunca se llegó a intentar
+    // cobrar, así que solo descartamos la contribución - no hay nada más
+    // que revertir.
+    await prisma.contribution.delete({ where: { id: contribution.id } });
 
     console.error("Error creando preferencia en Mercado Pago", err);
     return NextResponse.json(

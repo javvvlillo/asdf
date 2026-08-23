@@ -39,9 +39,12 @@ function fakeContribution(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function fakeDb(contribution: ReturnType<typeof fakeContribution> | null) {
+function fakeDb(
+  contribution: ReturnType<typeof fakeContribution> | null,
+  itemAfterUpdate: { stock: number } = { stock: 3 }
+) {
   const contributionUpdate = vi.fn().mockResolvedValue({});
-  const itemUpdate = vi.fn().mockResolvedValue({});
+  const itemUpdate = vi.fn().mockResolvedValue(itemAfterUpdate);
   const db = {
     contribution: {
       findUnique: vi.fn().mockResolvedValue(contribution),
@@ -66,7 +69,7 @@ describe("applyPaymentStatus", () => {
     await expect(applyPaymentStatus(basePayment(), db)).rejects.toThrow(/No existe contribución/);
   });
 
-  it("aprueba la contribución y marca el ítem como regalado cuando Mercado Pago confirma el pago", async () => {
+  it("aprueba la contribución y descuenta 1 del stock cuando Mercado Pago confirma el pago", async () => {
     const { db, contributionUpdate, itemUpdate } = fakeDb(fakeContribution());
 
     const result = await applyPaymentStatus(
@@ -79,10 +82,23 @@ describe("applyPaymentStatus", () => {
       expect.objectContaining({ data: expect.objectContaining({ status: "APPROVED" }) })
     );
     expect(itemUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ status: "GIFTED" }) })
+      expect.objectContaining({ data: { stock: { decrement: 1 } } })
     );
     expect(emailMocks.sendThankYouEmail).toHaveBeenCalledOnce();
     expect(emailMocks.sendOwnerNotificationEmail).toHaveBeenCalledOnce();
+    expect(emailMocks.sendAdminAlertEmail).not.toHaveBeenCalled();
+  });
+
+  it("avisa por email cuando el descuento deja el stock en negativo (se vendió de más)", async () => {
+    const { db } = fakeDb(fakeContribution(), { stock: -1 });
+
+    const result = await applyPaymentStatus(
+      basePayment({ status: MercadoPagoPaymentStatus.APPROVED }),
+      db
+    );
+
+    expect(result).toEqual({ outcome: "approved" });
+    expect(emailMocks.sendAdminAlertEmail).toHaveBeenCalledOnce();
   });
 
   it("ignora un webhook duplicado para un pago ya aprobado", async () => {
@@ -98,8 +114,8 @@ describe("applyPaymentStatus", () => {
     expect(emailMocks.sendThankYouEmail).not.toHaveBeenCalled();
   });
 
-  it("avisa por email en vez de descartar en silencio un pago aprobado tardío sobre una reserva ya expirada", async () => {
-    const { db, contributionUpdate, itemUpdate } = fakeDb(fakeContribution({ status: "EXPIRED" }));
+  it("avisa por email en vez de descartar en silencio un pago aprobado tardío sobre una contribución ya rechazada", async () => {
+    const { db, contributionUpdate, itemUpdate } = fakeDb(fakeContribution({ status: "REJECTED" }));
 
     const result = await applyPaymentStatus(
       basePayment({ status: MercadoPagoPaymentStatus.APPROVED }),
@@ -112,7 +128,7 @@ describe("applyPaymentStatus", () => {
     expect(emailMocks.sendAdminAlertEmail).toHaveBeenCalledOnce();
   });
 
-  it("rechaza la contribución y libera el ítem cuando Mercado Pago rechaza el pago", async () => {
+  it("rechaza la contribución sin tocar el stock del ítem cuando Mercado Pago rechaza el pago", async () => {
     const { db, contributionUpdate, itemUpdate } = fakeDb(fakeContribution());
 
     const result = await applyPaymentStatus(
@@ -124,9 +140,7 @@ describe("applyPaymentStatus", () => {
     expect(contributionUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ status: "REJECTED" }) })
     );
-    expect(itemUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { status: "AVAILABLE", reservedUntil: null } })
-    );
+    expect(itemUpdate).not.toHaveBeenCalled();
   });
 
   it("no hace nada si Mercado Pago todavía reporta el pago como pendiente o en proceso", async () => {
@@ -143,7 +157,7 @@ describe("applyPaymentStatus", () => {
   });
 
   it("ignora un rechazo duplicado sobre una contribución que ya estaba resuelta", async () => {
-    const { db, contributionUpdate } = fakeDb(fakeContribution({ status: "EXPIRED" }));
+    const { db, contributionUpdate } = fakeDb(fakeContribution({ status: "REJECTED" }));
 
     const result = await applyPaymentStatus(
       basePayment({ status: MercadoPagoPaymentStatus.REJECTED }),

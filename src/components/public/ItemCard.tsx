@@ -4,7 +4,7 @@ import { StatusBadge } from "./StatusBadge";
 import { formatClp } from "@/lib/format";
 
 export function ItemCard({ item, slug }: { item: Item; slug: string }) {
-  const isAvailable = item.status === "AVAILABLE";
+  const isAvailable = item.stock > 0;
 
   const card = (
     <div
@@ -29,7 +29,7 @@ export function ItemCard({ item, slug }: { item: Item; slug: string }) {
       <div className="flex flex-1 flex-col gap-2 p-4">
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-display text-lg leading-snug">{item.name}</h3>
-          <StatusBadge status={item.status} />
+          <StatusBadge stock={item.stock} />
         </div>
         {item.description && (
           <p className="line-clamp-2 text-sm text-charcoal/70">{item.description}</p>
