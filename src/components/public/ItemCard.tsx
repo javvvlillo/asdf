@@ -3,54 +3,74 @@ import type { Item } from "@prisma/client";
 import { StatusBadge } from "./StatusBadge";
 import { formatClp } from "@/lib/format";
 
-export function ItemCard({ item, slug }: { item: Item; slug: string }) {
+export function ItemCard({ item, slug, number }: { item: Item; slug: string; number: number }) {
   const isAvailable = item.stock > 0;
+  const n = String(number).padStart(2, "0");
 
   const card = (
-    <div
-      className={`group flex h-full flex-col overflow-hidden rounded-2xl border border-charcoal/10 bg-white/70 shadow-sm transition ${
-        isAvailable ? "hover:-translate-y-0.5 hover:shadow-md" : "opacity-60"
+    <article
+      className={`group flex h-full flex-col p-5 transition ${
+        isAvailable
+          ? "bg-azul-600 text-white hover:-translate-y-1 hover:shadow-[6px_6px_0_0_theme(colors.azul.900)]"
+          : "border-2 border-dashed border-azul-600/40 text-azul-600/60"
       }`}
     >
-      <div className="aspect-[4/3] w-full overflow-hidden bg-paper">
-        {item.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={item.imageUrl}
-            alt={item.name}
-            className="h-full w-full object-cover transition group-hover:scale-105"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-sm text-charcoal/30">
-            Sin foto
-          </div>
-        )}
+      <div className="flex items-start justify-between gap-3">
+        <span
+          className={`font-display text-5xl leading-none ${
+            isAvailable ? "text-white/90" : "text-azul-600/30"
+          }`}
+        >
+          {n}
+        </span>
+        <StatusBadge stock={item.stock} />
       </div>
-      <div className="flex flex-1 flex-col gap-2 p-4">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="font-display text-lg leading-snug">{item.name}</h3>
-          <StatusBadge stock={item.stock} />
-        </div>
-        {item.description && (
-          <p className="line-clamp-2 text-sm text-charcoal/70">{item.description}</p>
-        )}
-        <div className="mt-auto flex items-center justify-between pt-2">
-          <span className="font-display text-lg text-terracotta-600">
-            ${formatClp(item.price)}
-          </span>
-          {isAvailable && (
-            <span className="text-sm font-medium text-gold group-hover:underline">
-              Regalar →
-            </span>
+
+      {item.imageUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={item.imageUrl}
+          alt=""
+          className="mt-4 aspect-[4/3] w-full border-4 border-white object-cover"
+        />
+      )}
+
+      <h3
+        className={`mt-4 font-display text-2xl uppercase leading-[1.05] ${
+          isAvailable ? "" : "line-through decoration-2"
+        }`}
+      >
+        {item.name}
+      </h3>
+      {item.description && (
+        <p className={`mt-2 text-sm leading-snug ${isAvailable ? "text-white/80" : ""}`}>
+          {item.description}
+        </p>
+      )}
+
+      <div className="mt-auto flex items-end justify-between gap-3 pt-5">
+        <span className="font-bold">
+          ${formatClp(item.price)}
+          {item.stock > 1 && (
+            <span className="block text-[0.7rem] font-normal uppercase opacity-70">por aporte</span>
           )}
-        </div>
+        </span>
+        {isAvailable && (
+          <span className="bg-white px-3 py-1.5 text-xs font-bold uppercase text-azul-600 transition group-hover:bg-beige-200">
+            Regalar →
+          </span>
+        )}
       </div>
-    </div>
+    </article>
   );
 
   if (!isAvailable) {
     return <div aria-disabled="true">{card}</div>;
   }
 
-  return <Link href={`/${slug}/items/${item.id}/contribute`}>{card}</Link>;
+  return (
+    <Link href={`/${slug}/items/${item.id}/contribute`} className="block focus:outline-none focus-visible:ring-4 focus-visible:ring-azul-300">
+      {card}
+    </Link>
+  );
 }

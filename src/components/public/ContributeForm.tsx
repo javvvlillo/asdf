@@ -41,12 +41,12 @@ export function ContributeForm({ itemId }: { itemId: string }) {
     }
   }
 
-  const inputClass =
-    "rounded-lg border border-charcoal/20 bg-white px-3 py-2 focus:border-gold focus:outline-none";
+  const inputClass = "campo";
+  const labelClass = "flex flex-col gap-1 text-sm font-bold uppercase";
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <label className="flex flex-col gap-1 text-sm">
+      <label className={labelClass}>
         Tu nombre
         <input
           required
@@ -56,7 +56,7 @@ export function ContributeForm({ itemId }: { itemId: string }) {
           placeholder="María González"
         />
       </label>
-      <label className="flex flex-col gap-1 text-sm">
+      <label className={labelClass}>
         Tu email
         <input
           required
@@ -67,21 +67,21 @@ export function ContributeForm({ itemId }: { itemId: string }) {
           placeholder="maria@correo.cl"
         />
       </label>
-      <label className="flex flex-col gap-1 text-sm">
+      <label className={labelClass}>
         Mensaje (opcional)
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           rows={3}
           className={inputClass}
-          placeholder="¡Felicidades!"
+          placeholder="¡Que vivan los novios!"
         />
       </label>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm font-bold text-red-700">{error}</p>}
       <button
         type="submit"
         disabled={loading}
-        className="mt-2 rounded-full bg-gold px-6 py-3 text-sm font-medium uppercase tracking-wide text-white transition hover:bg-terracotta-600 disabled:opacity-50"
+        className="boton mt-2"
       >
         {loading ? "Redirigiendo a pago…" : "Ir a pagar"}
       </button>

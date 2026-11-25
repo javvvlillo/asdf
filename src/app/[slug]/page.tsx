@@ -40,11 +40,24 @@ export default async function RegistryPage({
       <Hero
         coupleNames={registry.coupleNames}
         weddingDate={registry.weddingDate}
+        eventTime={registry.eventTime}
+        venue={registry.venue}
         welcomeMessage={registry.welcomeMessage}
       />
-      <section className="mx-auto max-w-5xl px-6 pb-24">
+      <section className="mx-auto max-w-5xl px-4 pb-16 pt-10 sm:px-6">
         <ItemGrid items={registry.items} slug={slug} />
       </section>
+      <footer className="pb-12 text-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/invitacion/pareja-bailando.png"
+          alt="Sofía y Cristóbal bailando"
+          width={461}
+          height={308}
+          className="mx-auto w-64 sm:w-80"
+        />
+        <p className="titulo mt-2 text-[clamp(3.5rem,18vw,8rem)]">Te esperamos</p>
+      </footer>
     </main>
   );
 }

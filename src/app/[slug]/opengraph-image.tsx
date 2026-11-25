@@ -26,8 +26,8 @@ export default async function Image({
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#FBF6EF",
-          color: "#2E2A25",
+          backgroundColor: "#ECE3D5",
+          color: "#34589A",
         }}
       >
         <div
@@ -35,13 +35,15 @@ export default async function Image({
             fontSize: 20,
             letterSpacing: 8,
             textTransform: "uppercase",
-            color: "#B08D57",
+            backgroundColor: "#34589A",
+            color: "#FFFFFF",
+            padding: "8px 20px",
           }}
         >
           Lista de novios
         </div>
-        <div style={{ fontSize: 72, marginTop: 24 }}>{coupleNames}</div>
-        <div style={{ fontSize: 28, marginTop: 16, color: "#6B6459" }}>{date}</div>
+        <div style={{ fontSize: 96, fontWeight: 800, marginTop: 24, textTransform: "uppercase" }}>{coupleNames}</div>
+        <div style={{ fontSize: 30, marginTop: 16, textTransform: "uppercase" }}>{date}</div>
       </div>
     ),
     { ...size }

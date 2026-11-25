@@ -3,5 +3,28 @@
 @tailwind utilities;
 
 body {
-  @apply bg-cream text-charcoal font-sans antialiased;
+  @apply bg-cream text-azul-600 font-mono antialiased;
+  background-image: url("/invitacion/papel.jpg");
+  background-size: 1200px auto;
+  background-blend-mode: multiply;
+}
+
+@layer components {
+  /* Títulos gigantes condensados, como "SOFÍA &" / "CRISTÓBAL" en la invitación */
+  .titulo {
+    @apply font-display uppercase leading-[0.85] tracking-tight text-azul-600;
+  }
+  /* Etiqueta blanca con texto azul: FECHA, HORARIO, LUGAR */
+  .etiqueta {
+    @apply inline-block bg-white px-2 py-0.5 font-mono text-sm font-bold uppercase text-azul-600;
+  }
+  .boton {
+    @apply inline-flex items-center justify-center gap-2 bg-azul-600 px-6 py-3 font-mono text-sm font-bold uppercase tracking-wide text-white transition hover:bg-azul-700 disabled:opacity-50;
+  }
+  .boton-claro {
+    @apply inline-flex items-center justify-center gap-2 bg-white px-5 py-2.5 font-mono text-sm font-bold uppercase tracking-wide text-azul-600 transition hover:bg-beige-100;
+  }
+  .campo {
+    @apply border-2 border-azul-600/30 bg-white/80 px-3 py-2 text-azul-900 placeholder:text-azul-300 focus:border-azul-600 focus:outline-none;
+  }
 }

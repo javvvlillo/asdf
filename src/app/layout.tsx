@@ -1,25 +1,26 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Inter } from "next/font/google";
+import { Anton, Space_Mono } from "next/font/google";
 import "./globals.css";
 
-const display = Playfair_Display({
+const display = Anton({
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  weight: "400",
   variable: "--font-display",
 });
 
-const body = Inter({
+const mono = Space_Mono({
   subsets: ["latin"],
-  variable: "--font-body",
+  weight: ["400", "700"],
+  variable: "--font-mono",
 });
 
 export const metadata: Metadata = {
-  title: "Nuestra lista de novios",
+  title: "Sofía & Cristóbal · Lista de novios",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es-CL" className={`${display.variable} ${body.variable}`}>
+    <html lang="es-CL" className={`${display.variable} ${mono.variable}`}>
       <body>{children}</body>
     </html>
   );

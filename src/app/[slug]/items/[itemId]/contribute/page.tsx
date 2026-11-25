@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { formatClp } from "@/lib/format";
 import { ContributeForm } from "@/components/public/ContributeForm";
+import { StatusBadge } from "@/components/public/StatusBadge";
 
 export const dynamic = "force-dynamic";
 
@@ -26,35 +27,34 @@ export default async function ContributePage({
   }
 
   return (
-    <main className="mx-auto max-w-lg px-6 py-16">
-      <a href={`/${slug}`} className="text-sm text-charcoal/60 hover:underline">
+    <main className="mx-auto max-w-lg px-4 py-10 sm:px-6 sm:py-16">
+      <a href={`/${slug}`} className="text-sm font-bold uppercase hover:underline">
         ← Volver a la lista
       </a>
 
-      <div className="mt-6 overflow-hidden rounded-2xl border border-charcoal/10 bg-white/70">
-        <div className="aspect-[4/3] w-full overflow-hidden bg-paper">
-          {item.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={item.imageUrl}
-              alt={item.name}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center text-sm text-charcoal/30">
-              Sin foto
-            </div>
-          )}
+      <p className="titulo mt-8 text-[clamp(3.5rem,18vw,6rem)]">Regalar</p>
+
+      <div className="mt-2 bg-azul-600 p-6 text-white">
+        <div className="flex items-start justify-between gap-3">
+          <span className="etiqueta">Tu regalo</span>
+          <StatusBadge stock={item.stock} />
         </div>
-        <div className="p-6">
-          <h1 className="font-display text-2xl">{item.name}</h1>
-          {item.description && (
-            <p className="mt-2 text-sm text-charcoal/70">{item.description}</p>
+        {item.imageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={item.imageUrl}
+            alt={item.name}
+            className="mt-4 aspect-[4/3] w-full border-4 border-white object-cover"
+          />
+        )}
+        <h1 className="mt-4 font-display text-3xl uppercase leading-[1.05]">{item.name}</h1>
+        {item.description && <p className="mt-2 text-sm text-white/80">{item.description}</p>}
+        <p className="mt-5 text-2xl font-bold">
+          ${formatClp(item.price)}
+          {item.stock > 1 && (
+            <span className="ml-2 text-xs font-normal uppercase opacity-70">por aporte</span>
           )}
-          <p className="mt-4 font-display text-2xl text-terracotta-600">
-            ${formatClp(item.price)}
-          </p>
-        </div>
+        </p>
       </div>
 
       <div className="mt-8">

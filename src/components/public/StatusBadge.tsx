@@ -1,13 +1,19 @@
-export function StatusBadge({ stock }: { stock: number }) {
-  const available = stock > 0;
+/** Estado del regalo según stock. Con más de 1 unidad muestra cuántos aportes quedan. */
+export function StatusBadge({ stock, tone = "light" }: { stock: number; tone?: "light" | "dark" }) {
+  const label = stock <= 0 ? "Ya regalado" : stock === 1 ? "Queda 1" : `Quedan ${stock}`;
+
+  const color =
+    stock <= 0
+      ? "bg-azul-900/10 text-azul-900/60"
+      : tone === "light"
+        ? "bg-white text-azul-600"
+        : "bg-azul-600 text-white";
 
   return (
     <span
-      className={`inline-block shrink-0 rounded-full px-3 py-1 text-xs font-medium tracking-wide ${
-        available ? "bg-sage-100 text-sage-700" : "bg-charcoal/10 text-charcoal/60"
-      }`}
+      className={`inline-block shrink-0 px-2 py-0.5 text-[0.7rem] font-bold uppercase tracking-wide ${color}`}
     >
-      {available ? "Disponible" : "Agotado"}
+      {label}
     </span>
   );
 }

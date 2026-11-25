@@ -16,6 +16,9 @@ model Registry {
   slug           String   @unique
   coupleNames    String
   weddingDate    DateTime
+  // Texto libre tal como aparece en la invitación, p. ej. "De 14:00 a 00:00 horas"
+  eventTime      String?
+  venue          String?
   welcomeMessage String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
