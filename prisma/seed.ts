@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 // Son valores iniciales: se ajustan desde /admin/items sin tocar código.
 const GIFTS: Array<{ name: string; description: string; price: number; stock: number }> = [
   {
-    name: "Centímetros de estatura para Sofía",
+    name: "cm de estatura para Sofía",
     description: "Para que llegue a la repisa de arriba sin pedir ayuda. Cada aporte suma 1 cm.",
     price: 15000,
     stock: 10,
@@ -18,7 +18,7 @@ const GIFTS: Array<{ name: string; description: string; price: number; stock: nu
     stock: 8,
   },
   {
-    name: "Thermomix para que Sofía no cocine",
+    name: "Thermomix para que la Sofía no cocine",
     description: "La Thermomix cocina, Sofía descansa y todos comemos mejor.",
     price: 60000,
     stock: 15,
@@ -36,7 +36,7 @@ const GIFTS: Array<{ name: string; description: string; price: number; stock: nu
     stock: 5,
   },
   {
-    name: "Un chaleco antibalas para el Cesfam",
+    name: "Un chaleco anti balas para el Cesfam",
     description: "Elemento de protección personal, versión atención primaria.",
     price: 45000,
     stock: 3,
@@ -66,7 +66,7 @@ const GIFTS: Array<{ name: string; description: string; price: number; stock: nu
     stock: 5,
   },
   {
-    name: "Un crucero a la Antártida",
+    name: "Un crucero a la Antartida",
     description: "Pingüinos, hielo y nada de señal de celular.",
     price: 100000,
     stock: 20,
@@ -90,7 +90,7 @@ const GIFTS: Array<{ name: string; description: string; price: number; stock: nu
     stock: 5,
   },
   {
-    name: "Huevitos de pascua para el Viernes Santo",
+    name: "Huevitos de pascua para el viernes Santo",
     description: "La boda cae justo en Viernes Santo. El conejo también está invitado.",
     price: 10000,
     stock: 20,
