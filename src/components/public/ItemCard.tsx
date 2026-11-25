@@ -1,17 +1,19 @@
 import Link from "next/link";
 import type { Item } from "@prisma/client";
 import { StatusBadge } from "./StatusBadge";
+import { PhotoCredit } from "./PhotoCredit";
 import { formatClp } from "@/lib/format";
 
 export function ItemCard({ item, slug, number }: { item: Item; slug: string; number: number }) {
   const isAvailable = item.stock > 0;
   const n = String(number).padStart(2, "0");
 
-  const card = (
+  return (
     <article
-      className={`group flex h-full flex-col p-5 transition ${
+      aria-disabled={!isAvailable || undefined}
+      className={`group relative flex h-full flex-col p-5 transition ${
         isAvailable
-          ? "bg-azul-600 text-white hover:-translate-y-1 hover:shadow-[6px_6px_0_0_theme(colors.azul.900)]"
+          ? "bg-azul-600 text-white focus-within:ring-4 focus-within:ring-azul-300 hover:-translate-y-1 hover:shadow-[6px_6px_0_0_theme(colors.azul.900)]"
           : "border-2 border-dashed border-azul-600/40 text-azul-600/60"
       }`}
     >
@@ -27,20 +29,36 @@ export function ItemCard({ item, slug, number }: { item: Item; slug: string; num
       </div>
 
       {item.imageUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={item.imageUrl}
-          alt=""
-          className="mt-4 aspect-[4/3] w-full border-4 border-white object-cover"
-        />
+        <figure className="mt-4">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={item.imageUrl}
+            alt=""
+            loading="lazy"
+            className={`aspect-[4/3] w-full border-4 object-cover ${
+              isAvailable ? "border-white" : "border-azul-600/20 grayscale"
+            }`}
+          />
+          <PhotoCredit name={item.imageCredit} url={item.imageCreditUrl} className="mt-1" />
+        </figure>
       )}
 
       <h3
-        className={`mt-4 font-display text-2xl uppercase leading-[1.05] ${
+        className={`mt-3 font-display text-2xl uppercase leading-[1.05] ${
           isAvailable ? "" : "line-through decoration-2"
         }`}
       >
-        {item.name}
+        {isAvailable ? (
+          // El enlace cubre toda la tarjeta (after:inset-0); los créditos quedan por encima.
+          <Link
+            href={`/${slug}/items/${item.id}/contribute`}
+            className="after:absolute after:inset-0 focus:outline-none"
+          >
+            {item.name}
+          </Link>
+        ) : (
+          item.name
+        )}
       </h3>
       {item.description && (
         <p className={`mt-2 text-sm leading-snug ${isAvailable ? "text-white/80" : ""}`}>
@@ -56,21 +74,14 @@ export function ItemCard({ item, slug, number }: { item: Item; slug: string; num
           )}
         </span>
         {isAvailable && (
-          <span className="bg-white px-3 py-1.5 text-xs font-bold uppercase text-azul-600 transition group-hover:bg-beige-200">
+          <span
+            aria-hidden
+            className="bg-white px-3 py-1.5 text-xs font-bold uppercase text-azul-600 transition group-hover:bg-beige-200"
+          >
             Regalar →
           </span>
         )}
       </div>
     </article>
-  );
-
-  if (!isAvailable) {
-    return <div aria-disabled="true">{card}</div>;
-  }
-
-  return (
-    <Link href={`/${slug}/items/${item.id}/contribute`} className="block focus:outline-none focus-visible:ring-4 focus-visible:ring-azul-300">
-      {card}
-    </Link>
   );
 }

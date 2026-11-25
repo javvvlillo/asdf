@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { formatClp } from "@/lib/format";
 import { ContributeForm } from "@/components/public/ContributeForm";
 import { StatusBadge } from "@/components/public/StatusBadge";
+import { PhotoCredit } from "@/components/public/PhotoCredit";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,7 @@ export default async function ContributePage({
             className="mt-4 aspect-[4/3] w-full border-4 border-white object-cover"
           />
         )}
+        <PhotoCredit name={item.imageCredit} url={item.imageCreditUrl} className="mt-1" />
         <h1 className="mt-4 font-display text-3xl uppercase leading-[1.05]">{item.name}</h1>
         {item.description && <p className="mt-2 text-sm text-white/80">{item.description}</p>}
         <p className="mt-5 text-2xl font-bold">

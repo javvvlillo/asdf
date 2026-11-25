@@ -33,6 +33,9 @@ model Item {
   name        String
   description String?
   imageUrl    String?
+  // Crédito de la foto (Unsplash exige nombrar al fotógrafo con un enlace)
+  imageCredit    String?
+  imageCreditUrl String?
   price       Int // CLP, pesos enteros - sin decimales
   order       Int      @default(0)
   // Disponible = stock > 0, agotado = stock <= 0. Nunca baja al iniciar un

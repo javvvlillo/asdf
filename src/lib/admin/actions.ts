@@ -26,6 +26,8 @@ function itemDataFromForm(formData: FormData) {
     name: String(formData.get("name") ?? "").trim(),
     description: (formData.get("description") as string)?.trim() || null,
     imageUrl: (formData.get("imageUrl") as string)?.trim() || null,
+    imageCredit: (formData.get("imageCredit") as string)?.trim() || null,
+    imageCreditUrl: (formData.get("imageCreditUrl") as string)?.trim() || null,
     price: parsePrice(formData.get("price")),
     stock: parseStock(formData.get("stock")),
     order: Number(formData.get("order")) || 0,

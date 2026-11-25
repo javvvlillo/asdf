@@ -8,7 +8,7 @@ export function ItemForm({
   defaultValues,
 }: {
   action: (formData: FormData) => void;
-  defaultValues?: Pick<Item, "name" | "description" | "imageUrl" | "price" | "order" | "stock">;
+  defaultValues?: Pick<Item, "name" | "description" | "imageUrl" | "imageCredit" | "imageCreditUrl" | "price" | "order" | "stock">;
 }) {
   return (
     <form action={action} className="flex flex-col gap-4">
@@ -39,6 +39,24 @@ export function ItemForm({
           defaultValue={defaultValues?.imageUrl ?? ""}
           className={inputClass}
           placeholder="https://..."
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-sm">
+        Crédito de la foto (opcional, p. ej. nombre del fotógrafo)
+        <input
+          name="imageCredit"
+          defaultValue={defaultValues?.imageCredit ?? ""}
+          className={inputClass}
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-sm">
+        Enlace del crédito (opcional)
+        <input
+          name="imageCreditUrl"
+          type="url"
+          defaultValue={defaultValues?.imageCreditUrl ?? ""}
+          className={inputClass}
+          placeholder="https://unsplash.com/..."
         />
       </label>
       <label className="flex flex-col gap-1 text-sm">
